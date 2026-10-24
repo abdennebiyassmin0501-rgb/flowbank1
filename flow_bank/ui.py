@@ -46,7 +46,8 @@ div[data-testid="stRadio"] > div[role="radiogroup"] { gap: 6px; flex-wrap: wrap;
   padding: 6px 16px !important; margin:0 !important; cursor:pointer; }
 .st-key-page div[role="radiogroup"] label:has(input:checked) { background: var(--teal); border-color: var(--teal); }
 .st-key-page div[role="radiogroup"] label:has(input:checked) p { color: #fff !important; }
-.st-key-page div[role="radiogroup"] label > div:first-of-type { display:none !important; }
+/* نخفي دائرة الاختيار فقط: العنصر الذي لا يحتوي نص الزر */
+.st-key-page div[role="radiogroup"] label > div:not(:has(p)) { display:none !important; }
 .st-key-page div[role="radiogroup"] input { position:absolute; opacity:0; }
 /* إخفاء أيقونة الرابط بجانب العناوين */
 [data-testid="stHeaderActionElements"], .stApp h1 a[href^="#"], .stApp h2 a[href^="#"], .stApp h3 a[href^="#"] { display:none !important; }

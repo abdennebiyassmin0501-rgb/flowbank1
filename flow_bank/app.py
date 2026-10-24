@@ -18,7 +18,7 @@ import ui
 st.set_page_config(page_title="Flow Bank", page_icon="🏦", layout="wide", initial_sidebar_state="collapsed")
 ui.inject_css()
 
-PAGES = ["الرئيسية", "تقييم فرد", "تقييم شركة", "تقييم LGD وEAD", "أداء النماذج"]
+PAGES = ["الرئيسية", "تقييم فرد", "تقييم شركة", "أداء النماذج"]
 
 
 # ======================================================================= البيانات والنماذج
@@ -120,16 +120,13 @@ def page_home(ind, comp, res):
         f"{ui.tag('input')} قيمة مُدخلة يدويًا.", unsafe_allow_html=True)
 
     st.subheader("الخدمات")
-    a, b, d, c3 = st.columns(4)
+    a, b, c3 = st.columns(3)
     with a:
         st.markdown('<div class="fb-card"><h4>تقييم فرد</h4><p class="small">تقدير الخسارة المتوقعة والقرار الائتماني لطلب بطاقة، '
                     'انطلاقًا من الدخل والمصاريف والحد المطلوب والرصيد.</p></div>', unsafe_allow_html=True)
     with b:
         st.markdown('<div class="fb-card"><h4>تقييم شركة</h4><p class="small">تحليل القوائم المالية ومبلغ القرض: '
                     'النسب المالية، الخسارة المتوقعة، والقرار الائتماني.</p></div>', unsafe_allow_html=True)
-    with d:
-        st.markdown('<div class="fb-card"><h4>تقييم LGD وEAD</h4><p class="small">حساب التعرض عند التعثر للبطاقة أو القرض، '
-                    'والخسارة عند التعثر من الضمان وتكاليف التحصيل.</p></div>', unsafe_allow_html=True)
     with c3:
         st.markdown('<div class="fb-card"><h4>أداء النماذج</h4><p class="small">مقارنة النموذجين على بيانات اختبار '
                     'مستقلة، بمقاييس التمييز والدقة ومصفوفة الالتباس.</p></div>', unsafe_allow_html=True)
@@ -415,106 +412,6 @@ def page_performance(res):
                         f"ROC-AUC في التحقق المتقاطع {R['cv_auc'][kind]:.3f} · مدة التدريب {R['seconds'][kind]:.1f} ثانية")
 
 
-# ---------------------------------------------------------------------- تقييم LGD وEAD
-FACILITY = ["بطاقة أو خط ائتمان متجدد", "قرض بمبلغ محدد"]
-
-
-def pct_input(col, label, key, placeholder="0"):
-    """نسبة مئوية تُكتب من 0 إلى 100 وتُعاد بين 0 و1."""
-    v = col.number_input(f"{label} (%)", min_value=0.0, max_value=100.0, value=None, step=1.0, key=key,
-                         placeholder=placeholder)
-    return None if v is None else v / 100
-
-
-def page_lgd_ead():
-    st.title("تقييم LGD وEAD")
-    st.caption("جميع الحقول إلزامية. المبالغ بالدينار الجزائري (DA).")
-
-    # ---------------- EAD
-    st.markdown("### 1. التعرض عند التعثر (EAD)")
-    facility = st.selectbox("نوع التسهيل", FACILITY, index=None, key="e_type", placeholder="—")
-    ead = None
-    if facility == FACILITY[0]:
-        a, b, c = st.columns(3)
-        limit = money_input(a, "الحد الائتماني", "e_limit")
-        drawn = money_input(b, "الرصيد المستعمل", "e_drawn")
-        ccf = pct_input(c, "CCF: نسبة استعمال الجزء غير المستعمل", "e_ccf", "مثال: 75")
-        missing = missing_fields({"الحد الائتماني": limit, "الرصيد المستعمل": drawn, "CCF": ccf})
-        if missing:
-            st.info("حقول ناقصة: " + "، ".join(missing) + ".")
-        elif limit <= 0:
-            st.error("الحد الائتماني يجب أن يكون أكبر من صفر.")
-        else:
-            ead, used, undrawn = risk.card_ead(limit, drawn, ccf)
-            st.markdown(f'<div class="ecl-eq">EAD = {ui.money(used, convert=False)} + {ui.pct(ccf, 0)} × '
-                        f'{ui.money(undrawn, convert=False)} = <b>{ui.money(ead, convert=False)}</b></div>',
-                        unsafe_allow_html=True)
-            st.caption("EAD = الرصيد المستعمل + CCF × الجزء غير المستعمل من الحد.")
-    elif facility == FACILITY[1]:
-        a, b, c = st.columns(3)
-        principal = money_input(a, "مبلغ القرض", "e_principal")
-        repaid = money_input(b, "المبلغ المسدَّد", "e_repaid")
-        accrued = money_input(c, "الفوائد المستحقة غير المدفوعة", "e_accrued")
-        missing = missing_fields({"مبلغ القرض": principal, "المبلغ المسدَّد": repaid, "الفوائد المستحقة": accrued})
-        if missing:
-            st.info("حقول ناقصة: " + "، ".join(missing) + ".")
-        elif repaid > principal:
-            st.error("المبلغ المسدَّد أكبر من مبلغ القرض.")
-        else:
-            ead = risk.loan_ead(principal, repaid, accrued)
-            st.markdown(f'<div class="ecl-eq">EAD = {ui.money(principal - repaid, convert=False)} + '
-                        f'{ui.money(accrued, convert=False)} = <b>{ui.money(ead, convert=False)}</b></div>',
-                        unsafe_allow_html=True)
-            st.caption("EAD = المبلغ المتبقي (مبلغ القرض − المسدَّد) + الفوائد المستحقة غير المدفوعة.")
-    else:
-        st.info("حقول ناقصة: نوع التسهيل.")
-
-    # ---------------- LGD
-    st.markdown("### 2. الخسارة عند التعثر (LGD)")
-    a, b = st.columns(2)
-    collateral = money_input(a, "قيمة الضمان", "l_coll")
-    haircut = pct_input(b, "نسبة الاقتطاع من قيمة الضمان", "l_haircut", "مثال: 30")
-    a, b = st.columns(2)
-    costs = money_input(a, "تكاليف التحصيل", "l_costs")
-    unsecured = pct_input(b, "نسبة الاسترداد من الجزء غير المضمون", "l_unsec", "مثال: 10")
-    st.caption("الاقتطاع: النسبة التي تُخصم من قيمة الضمان عند بيعه (انخفاض السعر، البيع السريع). "
-               "ضمان غير موجود = قيمة 0.")
-    missing = missing_fields({"قيمة الضمان": collateral, "نسبة الاقتطاع": haircut, "تكاليف التحصيل": costs,
-                              "نسبة الاسترداد من الجزء غير المضمون": unsecured})
-    if ead is None:
-        st.info("حساب LGD يحتاج EAD من القسم 1.")
-        return
-    if missing:
-        st.info("حقول ناقصة: " + "، ".join(missing) + ".")
-        return
-    if ead <= 0:
-        st.info("EAD يساوي صفرًا: لا يوجد تعرض، فلا خسارة.")
-        return
-    r = risk.lgd_from_recovery(ead, collateral, haircut, costs, unsecured)
-    k = st.columns(4)
-    k[0].markdown(ui.kpi("الجزء المغطّى بالضمان", ui.money(r["secured"], convert=False),
-                         "قيمة الضمان بعد الاقتطاع، بحد أقصى EAD"), unsafe_allow_html=True)
-    k[1].markdown(ui.kpi("المبلغ المسترد الصافي", ui.money(r["recovered"], convert=False),
-                         "بعد خصم تكاليف التحصيل"), unsafe_allow_html=True)
-    k[2].markdown(ui.kpi("الخسارة بالمبلغ", ui.money(r["loss"], convert=False), "EAD − المسترد"), unsafe_allow_html=True)
-    k[3].markdown(ui.kpi("LGD", ui.pct(r["lgd"]), "الخسارة ÷ EAD"), unsafe_allow_html=True)
-    st.markdown(f'<div class="ecl-eq">LGD = 1 − {ui.money(r["recovered"], convert=False)} ÷ {ui.money(ead, convert=False)} '
-                f'= <b>{ui.pct(r["lgd"])}</b></div>', unsafe_allow_html=True)
-    st.caption("المسترد = الجزء المغطّى بالضمان + الجزء غير المضمون × نسبة استرداده − تكاليف التحصيل.")
-
-    # ---------------- EL (اختياري)
-    st.markdown("### 3. الخسارة المتوقعة (EL)")
-    a, b = st.columns(2)
-    pd_ = pct_input(a, "PD: احتمال التعثر", "l_pd", "مثال: 5")
-    group = b.selectbox("جدول القرار", ["individuals", "companies"], index=None, key="l_group", placeholder="—",
-                        format_func=lambda g: "الأفراد" if g == "individuals" else "الشركات")
-    if pd_ is None or group is None:
-        st.info("حقول ناقصة: " + "، ".join(n for n, v in (("PD", pd_), ("جدول القرار", group)) if v is None) + ".")
-        return
-    el = risk.ecl(pd_, r["lgd"], ead)
-    decision_block(el, group, pd_, r["lgd"], ead, "من القسم 1")
-
-
 def main():
     if not st.session_state.get("auth"):
         login_page()
@@ -534,8 +431,6 @@ def main():
             page_individual(ind)
         elif page == "تقييم شركة":
             page_company(comp)
-        elif page == "تقييم LGD وEAD":
-            page_lgd_ead()
         else:
             page_performance(res)
     except ValueError as e:
