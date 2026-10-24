@@ -1,0 +1,30 @@
+{
+  "prepared_on": "2026-10-24",
+  "individuals": {
+    "source": "https://archive.ics.uci.edu/dataset/350/default+of+credit+card+clients",
+    "doi": "https://doi.org/10.24432/C55S3H",
+    "license": "CC BY 4.0",
+    "source_file_sha256": "30c6be3abd8dcfd3e6096c828bad8c2f011238620f5369220bd60cfc82700933",
+    "member": "2fa49e10-default_of_credit_card_clients.xls",
+    "rows": 30000,
+    "defaults": 6636
+  },
+  "companies": {
+    "source": "https://archive.ics.uci.edu/dataset/572/taiwanese+bankruptcy+prediction",
+    "doi": "https://doi.org/10.24432/C5004D",
+    "license": "CC BY 4.0",
+    "source_file_sha256": "67bf2e7c75490f7ad3f76bbce57d49cdc25967cdab607527b94f944863fa14d8",
+    "member": "data.csv",
+    "rows": 6819,
+    "bankrupt": 220
+  },
+  "companies_polish": {
+    "source": "https://archive.ics.uci.edu/dataset/365/polish+companies+bankruptcy+data",
+    "doi": "https://doi.org/10.24432/C5F600",
+    "license": "CC BY 4.0",
+    "source_file_sha256": "cb3f6f250ac46bd8d18e9a222f489fe8ee3e396fcec18959f5a0ef8e8169b2fc",
+    "member": "5year.arff",
+    "rows": 5910,
+    "bankrupt": 410
+  }
+}
